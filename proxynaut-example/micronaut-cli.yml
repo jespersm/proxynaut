@@ -1,0 +1,5 @@
+profile: service
+defaultPackage: org.github.jespersm.proxynaut.example
+---
+testFramework: junit
+sourceLanguage: java

@@ -108,10 +108,10 @@ public class ProxyTest {
                 PropertySource.of(
                         "testProxyConfiguration",
                         CollectionUtils.mapOf(
-                            "proxy.test1.context", "/proxyOrigin",
-                            "proxy.test1.uri", server.getURL()+ "/origin",
-                            "proxy.test2.context", "/proxyJunk",
-                            "proxy.test2.uri", server.getURL()+ "/junk")
+                            "proxynaut.test1.context", "/proxyOrigin",
+                            "proxynaut.test1.uri", server.getURL()+ "/origin",
+                            "proxynaut.test2.context", "/proxyJunk",
+                            "proxynaut.test2.uri", server.getURL()+ "/junk")
                         )
                 );
         proxyServer.start();

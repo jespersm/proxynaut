@@ -23,12 +23,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import static java.util.stream.Collectors.toList;
 
 import javax.annotation.Nullable;
 import javax.inject.Singleton;
@@ -41,6 +43,8 @@ import org.slf4j.LoggerFactory;
 import io.micronaut.context.BeanContext;
 import io.micronaut.context.annotation.Executable;
 import io.micronaut.core.io.buffer.ByteBuffer;
+import io.micronaut.core.io.buffer.ReferenceCounted;
+import io.micronaut.core.util.StringUtils;
 import io.micronaut.http.HttpMethod;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
@@ -55,6 +59,7 @@ import io.micronaut.http.simple.SimpleHttpResponseFactory;
 import io.reactivex.Flowable;
 import io.reactivex.processors.BehaviorProcessor;
 import io.reactivex.processors.MulticastProcessor;
+import io.reactivex.processors.UnicastProcessor;
 
 @Singleton
 public class Proxy implements Closeable {
@@ -81,71 +86,19 @@ public class Proxy implements Closeable {
         String proxyContextPath = requestPath.substring(0, requestPath.length() - path.length());
         Optional<ProxyConfiguration> config = findConfigForRequest(proxyContextPath);
         if (!config.isPresent()) {
-            // This should never happen, only if Micronaut's router somehow was confused
+        	// This should never happen, only if Micronaut's router somehow was confused
+        	List<String> prefixes = configs.stream().map(c -> c.getContext()).collect(toList());
+            LOG.warn("Matched " + request.getMethod() + " " + request.getPath() + " to the proxy, but no configuration is found. Prefixes found in config: " + prefixes);
             return HttpResponse.status(HttpStatus.BAD_REQUEST, "Unknown proxy path: " + proxyContextPath);
         }
 
-        RxStreamingHttpClient client = findOrCreateClient(config.get());
-
-        String originPath = config.get().getUri().getPath() + path;
-        LOG.debug("Proxy'ing incoming " + request.getMethod() + " " + request.getPath() + " -> " + originPath);
-        MutableHttpRequest<Object> upstreamRequest = SimpleHttpRequestFactory.INSTANCE.create(request.getMethod(),
-                originPath);
-
-        Optional<?> body = request.getBody();
-        if (HttpMethod.permitsRequestBody(request.getMethod())) {
-            body.ifPresent((Object b) -> upstreamRequest.body(b));
-        }
-        LOG.debug("About to pivot proxy call to " + config.get().getUri() + path);
+        MutableHttpRequest<Object> upstreamRequest = buildRequest(request, path, config);
+        
+        RxStreamingHttpClient client = findOrCreateClient(config.get());        
+        LOG.info("About to pivot proxy call to " + config.get().getUri() + path);
         Flowable<HttpResponse<ByteBuffer<?>>> upstreamResponseFlowable = client.exchangeStream(upstreamRequest).serialize();
         
-        CompletableFuture<HttpResponse<Flowable<byte[]>>> futureResponse = new CompletableFuture<>();
-        MulticastProcessor<ByteBuffer<?>> responseBodyFlowable = MulticastProcessor.create();
-        responseBodyFlowable.startUnbounded();
-        
-        upstreamResponseFlowable.subscribe(new Subscriber<HttpResponse<ByteBuffer<?>>>() {
-
-			private Subscription subscription;
-
-			@Override
-			public void onSubscribe(Subscription s) {
-				this.subscription = s;
-				s.request(Long.MAX_VALUE);
-			}
-
-			@Override
-			public void onNext(HttpResponse<ByteBuffer<?>> upstreamResponse) {
-				if (LOG.isTraceEnabled()) {
-					LOG.trace("************ Read Response from {}", upstreamResponse.body().toString(StandardCharsets.UTF_8));
-				}
-				// When the upstream first first packet comes in, complete the response
-				if (! futureResponse.isDone()) {
-					HttpResponse response = makeResponse(upstreamResponse, responseBodyFlowable, config);
-					futureResponse.complete(response);
-				}
-				responseBodyFlowable.onNext(upstreamResponse.body());
-				subscription.request(10);
-			}
-
-			@Override
-			public void onError(Throwable t) {
-				LOG.info("Error from upstream", t);
-				if (t instanceof HttpClientResponseException) {
-					HttpClientResponseException upstreamException = (HttpClientResponseException) t;
-			    	HttpResponse upstreamErrorResponse = upstreamException.getResponse();
-			    	MutableHttpResponse<?> response = SimpleHttpResponseFactory.INSTANCE.status(
-			    			upstreamErrorResponse.getStatus(), Flowable.just(upstreamException.getMessage())).contentType(MediaType.TEXT_PLAIN);
-					futureResponse.complete((HttpResponse<Flowable<byte[]>>) response);
-				}
-				responseBodyFlowable.onError(t);
-			}
-
-			@Override
-			public void onComplete() {
-				LOG.trace("Upstream response body done");
-				responseBodyFlowable.onComplete();
-			}
-		});
+        CompletableFuture<HttpResponse<Flowable<byte[]>>> futureResponse = buildResponse(config, upstreamResponseFlowable);
         
         try {
 			return futureResponse.get(config.get().getTimeoutMs(), TimeUnit.MILLISECONDS);
@@ -157,13 +110,95 @@ public class Proxy implements Closeable {
 		}
     }
 
-	protected HttpResponse makeResponse(HttpResponse<?> upstreamResponse,
-    		Flowable<ByteBuffer<?>> responseFlowable,
+	private CompletableFuture<HttpResponse<Flowable<byte[]>>> buildResponse(Optional<ProxyConfiguration> config,
+			Flowable<HttpResponse<ByteBuffer<?>>> upstreamResponseFlowable) {
+		CompletableFuture<HttpResponse<Flowable<byte[]>>> futureResponse = new CompletableFuture<>();
+        UnicastProcessor<byte[]> responseBodyFlowable = UnicastProcessor.create();
+        
+        upstreamResponseFlowable.subscribe(new Subscriber<HttpResponse<ByteBuffer<?>>>() {
+
+			private Subscription subscription;
+
+			@Override
+			public void onSubscribe(Subscription s) {
+				this.subscription = s;
+				s.request(1);
+			}
+
+			@Override
+			public void onNext(HttpResponse<ByteBuffer<?>> upstreamResponse) {
+				if (LOG.isTraceEnabled()) {
+					LOG.trace("************ Read Response from {}", upstreamResponse.body().toString(StandardCharsets.UTF_8));
+				}
+				// When the upstream first first packet comes in, complete the response
+				if (! futureResponse.isDone()) {
+					LOG.info("Completed pivot: " + upstreamResponse.getStatus());
+					HttpResponse response = makeResponse(upstreamResponse, responseBodyFlowable, config);
+					futureResponse.complete(response);
+				}
+				ByteBuffer<?> byteBuffer = upstreamResponse.body();
+				responseBodyFlowable.onNext(byteBuffer.toByteArray());
+	        	if (byteBuffer instanceof ReferenceCounted) ((ReferenceCounted)byteBuffer).release();
+				subscription.request(1);
+			}
+
+			@Override
+			public void onError(Throwable t) {
+				if (t instanceof HttpClientResponseException && ! futureResponse.isDone()) {
+					HttpClientResponseException upstreamException = (HttpClientResponseException) t;
+					LOG.info("HTTP error from upstream: " + upstreamException.getStatus().getReason());
+			    	HttpResponse upstreamErrorResponse = upstreamException.getResponse();
+			    	HttpResponse<ByteBuffer<?>> upstreamResponse = (HttpResponse<ByteBuffer<?>>) upstreamException.getResponse();
+			    	
+					LOG.info("Completed pivot: " + upstreamResponse.getStatus());
+					HttpResponse response = makeErrorResponse(upstreamResponse, config);
+					futureResponse.complete((HttpResponse<Flowable<byte[]>>) response);
+				} else {
+					LOG.info("Proxy got unknown error from upstream: " + t.getMessage(), t);
+					responseBodyFlowable.onError(t);
+				}
+			}
+
+			@Override
+			public void onComplete() {
+				LOG.trace("Upstream response body done");
+				responseBodyFlowable.onComplete();
+			}
+		});
+		return futureResponse;
+	}
+
+	private MutableHttpRequest<Object> buildRequest(HttpRequest<ByteBuffer<?>> request, String path,
 			Optional<ProxyConfiguration> config) {
-		MutableHttpResponse<Flowable<ByteBuffer<?>>> httpResponse = SimpleHttpResponseFactory.INSTANCE.status(upstreamResponse.getStatus(), responseFlowable);
+		String originPath = config.get().getUri().getPath() + path;
+        String queryPart = request.getUri().getQuery();
+        String originUri = StringUtils.isEmpty(queryPart) ? originPath : (originPath + "?" + queryPart);
+        LOG.debug("Proxy'ing incoming " + request.getMethod() + " " + request.getPath() + " -> " + originPath);
+        MutableHttpRequest<Object> upstreamRequest = SimpleHttpRequestFactory.INSTANCE.create(request.getMethod(),
+                originUri);
+
+        Optional<?> body = request.getBody();
+        if (HttpMethod.permitsRequestBody(request.getMethod())) {
+            body.ifPresent((Object b) -> upstreamRequest.body(b));
+        }
+		return upstreamRequest;
+	}
+
+	protected HttpResponse makeResponse(HttpResponse<?> upstreamResponse,
+    		Flowable<byte[]> responseFlowable,
+			Optional<ProxyConfiguration> config) {
+		MutableHttpResponse<Flowable<byte[]>> httpResponse = SimpleHttpResponseFactory.INSTANCE.status(upstreamResponse.getStatus(), responseFlowable);
 		upstreamResponse.getContentType().ifPresent(mediaType -> httpResponse.contentType(mediaType));
 		return httpResponse;
 	}
+
+	protected HttpResponse makeErrorResponse(HttpResponse<?> upstreamResponse,
+			Optional<ProxyConfiguration> config) {
+		MutableHttpResponse<Flowable<byte[]>> httpResponse = SimpleHttpResponseFactory.INSTANCE.status(upstreamResponse.getStatus(), Flowable.empty());
+		upstreamResponse.getContentType().ifPresent(mediaType -> httpResponse.contentType(mediaType));
+		return httpResponse;
+	}
+
 
 	private RxStreamingHttpClient findOrCreateClient(ProxyConfiguration config) {
         return proxyMap.computeIfAbsent(config.getName(), n -> {

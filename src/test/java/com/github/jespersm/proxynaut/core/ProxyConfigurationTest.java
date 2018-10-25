@@ -37,21 +37,21 @@ public class ProxyConfigurationTest {
         ApplicationContext applicationContext = ApplicationContext.run(PropertySource.of(
                 "test",
                 CollectionUtils.mapOf(
-                "proxy.test1.context", "/root",
-                "proxy.test1.uri", "http://some.server/root",
-                "proxy.test1.allowedMethods", asList("get", "post"),
-                "proxy.test1.includeRequestHeaders", asList("Cookie-Control"),
-                "proxy.test1.excludeResponseHeaders", asList("Content-Disposition"),
-                "proxy.test2.context", "/root",
-                "proxy.test2.uri", "http://some.server/root",
-                "proxy.test2.allowedMethods", asList("get", "put"),
-                "proxy.test2.includeRequestHeaders", asList("Authentication"),
-                "proxy.test2.includeResponseHeaders", asList("Cookie-Control"),
-                "proxy.test3.context", "/root",
-                "proxy.test3.uri", "http://some.server/root",
-                "proxy.test3.allowedMethods", asList("*"),
-                "proxy.test3.excludeRequestHeaders", asList("Authentication"),
-                "proxy.test3.excludeResponseHeaders", asList("X-Powered-By")
+                "proxynaut.test1.context", "/root",
+                "proxynaut.test1.uri", "http://some.server/root",
+                "proxynaut.test1.allowedMethods", asList("get", "post"),
+                "proxynaut.test1.includeRequestHeaders", asList("Cookie-Control"),
+                "proxynaut.test1.excludeResponseHeaders", asList("Content-Disposition"),
+                "proxynaut.test2.context", "/root",
+                "proxynaut.test2.uri", "http://some.server/root",
+                "proxynaut.test2.allowedMethods", asList("get", "put"),
+                "proxynaut.test2.includeRequestHeaders", asList("Authentication"),
+                "proxynaut.test2.includeResponseHeaders", asList("Cookie-Control"),
+                "proxynaut.test3.context", "/root",
+                "proxynaut.test3.uri", "http://some.server/root",
+                "proxynaut.test3.allowedMethods", asList("*"),
+                "proxynaut.test3.excludeRequestHeaders", asList("Authentication"),
+                "proxynaut.test3.excludeResponseHeaders", asList("X-Powered-By")
                 )
         ));
         assertTrue(applicationContext.containsBean(ProxyConfiguration.class));

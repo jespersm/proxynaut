@@ -16,22 +16,28 @@
 
 package com.github.jespersm.proxynaut.core;
 
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
+
+import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
-import io.micronaut.http.annotation.Produces;
+import io.micronaut.http.annotation.QueryValue;
 import io.reactivex.Flowable;
-import io.reactivex.Maybe;
-import io.reactivex.Single;
 
 @Controller("/origin")
 public class OriginController {
 	
 	private final static String SPACES_100 = "                                                                                                    ";
 	private final static String SPACES_1000 = SPACES_100 + SPACES_100 + SPACES_100 + SPACES_100 + SPACES_100 + SPACES_100 + SPACES_100 + SPACES_100 + SPACES_100 + SPACES_100;  
+
+    protected static final Logger LOG = LoggerFactory.getLogger(OriginController.class);
 
     @Get(uri="/", produces=MediaType.TEXT_PLAIN)
     public HttpResponse<String> index() {
@@ -45,6 +51,7 @@ public class OriginController {
 
     @Get(uri="/bad", produces=MediaType.TEXT_PLAIN)
     public HttpResponse<String> bad() {
+    	LOG.info("Can't touch this!");
         return HttpResponse.badRequest("Can't touch this");
     }
 
@@ -57,4 +64,12 @@ public class OriginController {
     public Flowable<byte[]> rawJsonStream() {
         return Flowable.just("{\"attribute\":42}".getBytes()).delay(300, TimeUnit.MILLISECONDS);
     }
+    
+    @Get(uri="/randomData{?chunks,size}", produces=MediaType.APPLICATION_OCTET_STREAM)
+    public Flowable<byte[]> randomData(@QueryValue @Nullable Integer chunks, @QueryValue @Nullable Integer size) {
+    	byte[] randomData = new byte[size];
+    	new Random(System.currentTimeMillis()).nextBytes(randomData);
+        return Flowable.just(randomData).repeat(chunks);
+    }
+
 }

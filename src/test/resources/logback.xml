@@ -12,9 +12,9 @@
         <appender-ref ref="STDOUT" />
     </root>
 
-    <logger name="proxynaut" level="TRACE"/>
+<!--   <logger name="proxynaut" level="TRACE"/>
     <logger name="io.micronaut.http" level="TRACE"/>
     <logger name="io.netty.handler.logging" level="TRACE" />
     <logger name="io.micronaut.jackson.parser" level="TRACE"/>
-    
+     -->  
 </configuration>

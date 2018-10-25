@@ -39,15 +39,36 @@ import io.micronaut.http.HttpStatus;
 import io.micronaut.http.client.RxHttpClient;
 import io.micronaut.http.client.RxStreamingHttpClient;
 import io.micronaut.http.client.exceptions.HttpClientResponseException;
+import io.micronaut.http.uri.UriTemplate;
 import io.micronaut.runtime.server.EmbeddedServer;
 import io.reactivex.Flowable;
 import io.reactivex.Maybe;
 import io.reactivex.disposables.Disposable;
 
-public class ProxyTest extends AbstractOperationTest {
+public class ProxyPerformanceTest {
 
     static EmbeddedServer server;
     static EmbeddedServer proxyServer;
+    RxStreamingHttpClient client;
+
+    private static long CHUNK_COUNT = 2_000;
+    private static long CHUNK_SIZE = 1_000_000;
+    
+    @Test
+    public void testStreamBigResponse() throws InterruptedException {
+    	String uri = UriTemplate.of("/proxyOrigin/randomData{?chunks,size}").expand(CollectionUtils.mapOf("chunks", CHUNK_COUNT, "size", CHUNK_SIZE));
+    	
+        Flowable<ByteBuffer<?>> response = client.dataStream(HttpRequest.create(HttpMethod.GET, uri));
+        Maybe<Long> sumOfBufferBytes = response.map(bb -> {
+        	long value = bb.readableBytes();
+        	if (bb instanceof ReferenceCounted) ((ReferenceCounted)bb).release();
+        	
+        	return value;
+        }).reduce(Long::sum);
+        
+        long allBytes = sumOfBufferBytes.blockingGet();
+        assertEquals(CHUNK_COUNT * CHUNK_SIZE, allBytes);
+    }
 
     @BeforeClass
     public static void makeContext()
@@ -55,13 +76,12 @@ public class ProxyTest extends AbstractOperationTest {
         server = ApplicationContext.run(EmbeddedServer.class);
         proxyServer = ApplicationContext.run(EmbeddedServer.class, 
                 PropertySource.of(
-                        "testProxyConfiguration",
+                        "whatever",
                         CollectionUtils.mapOf(
                             "proxynaut.test1.context", "/proxyOrigin",
-                            "proxynaut.test1.uri", server.getURL()+ "/origin",
-                            "proxynaut.test2.context", "/proxyJunk",
-                            "proxynaut.test2.uri", server.getURL()+ "/junk")
+                            "proxynaut.test1.uri", server.getURL()+ "/origin"
                         )
+                    )
                 );
         proxyServer.start();
     }
@@ -79,14 +99,19 @@ public class ProxyTest extends AbstractOperationTest {
         }
     }
 
-	@Override
-	protected String getPrefixUnderTest() {
-		return "/proxyOrigin";
-	}
+    @Before
+    public void makeClient()
+    {
+        client = proxyServer.getApplicationContext().createBean(RxStreamingHttpClient.class, proxyServer.getURL());
+    }
 
-	@Override
-	protected EmbeddedServer getServerUnderTest() {
-		return proxyServer;
-	}
+    @After
+    public void closeClient()
+    {
+        if (client != null) {
+            client.stop();
+            client = null;
+        }
+    }
 
 }

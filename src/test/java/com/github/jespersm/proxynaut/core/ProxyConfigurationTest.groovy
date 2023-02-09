@@ -1,7 +1,7 @@
 /*
  * Copyright 2018 Jesper Steen Møller
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -14,26 +14,26 @@
  * limitations under the License.
  */
 
-package com.github.jespersm.proxynaut.core;
+package com.github.jespersm.proxynaut.core
 
-import static java.util.Arrays.asList;
-import static org.junit.Assert.*;
+import static java.util.Arrays.asList
+import static org.junit.Assert.*
 
-import java.util.Collection;
+import java.util.Collection
 
-import org.junit.Test;
+import org.junit.Test
 
-import com.github.jespersm.proxynaut.core.ProxyConfiguration;
+import com.github.jespersm.proxynaut.core.ProxyConfiguration
 
-import io.micronaut.context.ApplicationContext;
-import io.micronaut.context.env.PropertySource;
-import io.micronaut.core.util.CollectionUtils;
-import io.micronaut.http.HttpMethod;
+import io.micronaut.context.ApplicationContext
+import io.micronaut.context.env.PropertySource
+import io.micronaut.core.util.CollectionUtils
+import io.micronaut.http.HttpMethod
 
-public class ProxyConfigurationTest {
+class ProxyConfigurationTest {
 
     @Test
-    public void testProxyConfiguration() {
+    void testProxyConfiguration() {
         ApplicationContext applicationContext = ApplicationContext.run(PropertySource.of(
                 "test",
                 CollectionUtils.mapOf(
@@ -53,25 +53,25 @@ public class ProxyConfigurationTest {
                 "proxynaut.test3.excludeRequestHeaders", asList("Authentication"),
                 "proxynaut.test3.excludeResponseHeaders", asList("X-Powered-By")
                 )
-        ));
-        assertTrue(applicationContext.containsBean(ProxyConfiguration.class));
-        Collection<ProxyConfiguration> proxies = applicationContext.getBeansOfType(ProxyConfiguration.class);
+        ))
+        assertTrue(applicationContext.containsBean(ProxyConfiguration))
+        Collection<ProxyConfiguration> proxies = applicationContext.getBeansOfType(ProxyConfiguration)
 
         // Yeah, let it throw if not there
-        ProxyConfiguration proxy = proxies.stream().filter(p -> p.getName().equals("test1")).findFirst().get();
-        assertEquals("/root", proxy.getContext().toString());
-        assertEquals( "http://some.server/root", proxy.getUri().toString());
-        assertTrue("Expect to see 'GET' as allowed verb", proxy.getAllowedMethods().contains("GET"));
-        assertTrue("Expect that 'GET' is allowed", proxy.shouldAllowMethod(HttpMethod.GET));
-        assertFalse("Expect that 'PUT' is not allowed", proxy.shouldAllowMethod(HttpMethod.PUT));
+        ProxyConfiguration proxy = proxies.stream().filter(p -> p.getName().equals("test1")).findFirst().get()
+        assertEquals("/root", proxy.getContext().toString())
+        assertEquals( "http://some.server/root", proxy.getUri().toString())
+        assertTrue("Expect to see 'GET' as allowed verb", proxy.getAllowedMethods().contains("GET"))
+        assertTrue("Expect that 'GET' is allowed", proxy.shouldAllowMethod(HttpMethod.GET))
+        assertFalse("Expect that 'PUT' is not allowed", proxy.shouldAllowMethod(HttpMethod.PUT))
         assertTrue("Expected that the 'Cookie-Control'-header should be sent through",
-                proxy.shouldIncludeRequestHeader("Cookie-Control"));
+                proxy.shouldIncludeRequestHeader("Cookie-Control"))
         assertFalse("Expected that the 'Authentication'-header should NOT be sent through",
-                proxy.shouldIncludeRequestHeader("Authentication"));
+                proxy.shouldIncludeRequestHeader("Authentication"))
         assertFalse("Expected that the 'Content-Disposition'-response header should be dropped",
-                proxy.shouldIncludeResponseHeader("Content-Disposition"));
+                proxy.shouldIncludeResponseHeader("Content-Disposition"))
         assertTrue("Expected that the 'X-Powered-By'-response header should pass through",
-                proxy.shouldIncludeResponseHeader("X-Powered-By"));
+                proxy.shouldIncludeResponseHeader("X-Powered-By"))
     }
 
 }

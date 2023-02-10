@@ -1,0 +1,68 @@
+plugins {
+    id "groovy"
+    id "jacoco"
+    id "maven"
+}
+
+version = "0.0.1-SNAPSHOT"
+group = "com.j1mrenwick"
+
+repositories {
+    mavenCentral()
+    google()
+}
+
+dependencies {
+
+    annotationProcessor platform("io.micronaut:micronaut-bom:$micronautVersion")
+    annotationProcessor "io.micronaut:micronaut-inject-java"
+    annotationProcessor "io.micronaut:micronaut-validation"
+    compileOnly platform("io.micronaut:micronaut-bom:$micronautVersion")
+    implementation platform("io.micronaut:micronaut-bom:$micronautVersion")
+    implementation "io.micronaut:micronaut-http-client"
+    implementation "io.micronaut:micronaut-http-server-netty"
+    annotationProcessor "io.micronaut:micronaut-inject-java"
+    annotationProcessor "io.micronaut:micronaut-validation"
+    compileOnly "io.micronaut:micronaut-inject-groovy"
+    implementation "io.micronaut.groovy:micronaut-runtime-groovy"
+    runtimeOnly "ch.qos.logback:logback-classic:1.2.3"
+
+    testCompileOnly platform("io.micronaut:micronaut-bom:$micronautVersion")
+    testImplementation platform("io.micronaut:micronaut-bom:$micronautVersion")
+    testImplementation("org.spockframework:spock-core") {
+        exclude group: "org.codehaus.groovy", module: "groovy-all"
+    }
+    testImplementation "io.micronaut:micronaut-inject-groovy"
+    testImplementation "io.micronaut.test:micronaut-test-spock"
+    testImplementation "io.micronaut.test:micronaut-test-junit5"
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled true
+        csv.enabled false
+        html.enabled true
+    }
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it)
+        }))
+    }
+}
+
+test {
+    useJUnitPlatform()
+    maxHeapSize = "2000m" // maximum heap size, to combat potential memory leak
+}
+
+test.finalizedBy(jacocoTestReport)
+
+java {
+    withSourcesJar()
+    sourceCompatibility = JavaVersion.toVersion("1.8")
+    targetCompatibility = JavaVersion.toVersion("1.8")
+}
+
+tasks.withType(GroovyCompile) {
+    groovyOptions.forkOptions.jvmArgs.add('-Dgroovy.parameters=true')
+}

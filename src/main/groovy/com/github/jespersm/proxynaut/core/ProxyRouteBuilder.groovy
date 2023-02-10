@@ -16,12 +16,13 @@
 
 package com.github.jespersm.proxynaut.core
 
+
 import io.micronaut.context.ExecutionHandleLocator
 import io.micronaut.http.HttpMethod
 import io.micronaut.http.HttpRequest
 import io.micronaut.web.router.DefaultRouteBuilder
 
-import javax.inject.Inject
+import javax.annotation.PostConstruct
 import javax.inject.Singleton
 
 @Singleton
@@ -31,7 +32,7 @@ class ProxyRouteBuilder extends DefaultRouteBuilder {
         super(executionHandleLocator, uriNamingStrategy)
     }
 
-    @Inject
+    @PostConstruct
     void buildProxyRoutes(Collection<ProxyConfiguration> configs) {
         for (ProxyConfiguration config : configs) {
             String contextPath = config.getContext() + "{+path:?}"

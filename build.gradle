@@ -7,8 +7,8 @@
 plugins {
     id "groovy"
 //    id("com.github.johnrengelman.shadow") version "6.1.0"
-//    id("io.micronaut.application") version "2.0.8"
     id "jacoco"
+    id "maven"
 }
 
 version = "0.0.1"
@@ -31,68 +31,17 @@ dependencies {
     annotationProcessor "io.micronaut:micronaut-inject-java"
     annotationProcessor "io.micronaut:micronaut-validation"
     compileOnly "io.micronaut:micronaut-inject-groovy"
-    implementation "io.micronaut:micronaut-runtime-groovy:1.1.1"
+    implementation "io.micronaut.groovy:micronaut-runtime-groovy"
     runtimeOnly "ch.qos.logback:logback-classic:1.2.3"
 
+    testCompileOnly platform("io.micronaut:micronaut-bom:$micronautVersion")
+    testImplementation platform("io.micronaut:micronaut-bom:$micronautVersion")
+    testImplementation("org.spockframework:spock-core") {
+        exclude group: "org.codehaus.groovy", module: "groovy-all"
+    }
+    testImplementation "io.micronaut:micronaut-inject-groovy"
+    testImplementation "io.micronaut.test:micronaut-test-spock"
     testImplementation "io.micronaut.test:micronaut-test-junit5"
-    testImplementation "junit:junit:4.12"
-    testRuntimeOnly "org.junit.vintage:junit-vintage-engine:5.5.0"
-
-//
-//    // standard micronaut dependencies
-//    annotationProcessor platform("io.micronaut:micronaut-bom:$micronautVersion")
-//    annotationProcessor "io.micronaut:micronaut-inject-java"
-//    annotationProcessor "io.micronaut:micronaut-validation"
-//    compileOnly platform("io.micronaut:micronaut-bom:$micronautVersion")
-//    compileOnly "io.micronaut:micronaut-inject-groovy"
-//    implementation platform("io.micronaut:micronaut-bom:$micronautVersion")
-//
-//    implementation "io.micronaut:micronaut-http-client"
-//    implementation "io.micronaut:micronaut-http-server-netty"
-//    implementation "io.micronaut:micronaut-validation"
-//    implementation "io.micronaut:micronaut-runtime-groovy:1.1.1"
-//    implementation "io.micronaut:micronaut-management"
-//    implementation "io.micronaut:micronaut-security-jwt:1.4.0"
-//    implementation 'io.micronaut.security:micronaut-security-oauth2'
-//
-//    implementation "com.sun.mail:javax.mail:1.6.2"
-//    implementation 'com.pusher:pusher-java-client:2.2.8'
-//
-//    implementation("io.micronaut.cache:micronaut-cache-caffeine")
-//    implementation("io.micronaut.cache:micronaut-cache-core")
-//
-//    runtimeOnly "ch.qos.logback:logback-classic:1.2.3"
-//    testCompileOnly platform("io.micronaut:micronaut-bom:$micronautVersion")
-//    testImplementation platform("io.micronaut:micronaut-bom:$micronautVersion")
-//    testImplementation("org.spockframework:spock-core") {
-//        exclude group: "org.codehaus.groovy", module: "groovy-all"
-//    }
-//    testImplementation "io.micronaut:micronaut-inject-groovy"
-//    testImplementation "io.micronaut.test:micronaut-test-spock"
-//    testImplementation "io.micronaut.test:micronaut-test-junit5"
-//    testImplementation "org.testcontainers:spock:1.16.2"
-//    testImplementation 'com.github.valfirst:slf4j-test:2.6.1'                                 // mock SLF4J logger to test logging
-//    testImplementation 'com.squareup.okhttp3:okhttp:4.9.3'
-//
-//    testRuntimeOnly "org.junit.vintage:junit-vintage-engine:5.5.0"
-//
-//    // project dependencies
-//    compileOnly("io.micronaut.openapi:micronaut-openapi:2.3.0")
-//    implementation("io.swagger.core.v3:swagger-annotations")
-//    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.13.4'              // Java 8 time support for Jackson JSON marshalling
-//    implementation "io.micronaut.mongodb:micronaut-mongo-reactive:3.1.0"                                     // blocking mongo java driver
-//    compile 'org.mongodb:mongodb-crypt:1.0.1'
-//    implementation("io.micronaut.views:micronaut-views-thymeleaf")
-//    implementation 'com.amazonaws:aws-java-sdk-ses:1.11.1022'
-//    implementation 'uk.co.lucasweb:aws-v4-signer-java:1.3'
-//    implementation 'com.google.guava:guava:31.0.1-jre'
-//    implementation 'io.projectreactor.addons:reactor-adapter:3.4.0'                           // to convert redis Reactor implemented output to RxJava2
-//    implementation "io.micronaut.redis:micronaut-redis-lettuce"
-//    implementation 'net.minidev:json-smart:2.4.8'
-//
-//    // C-ART Send Lambda Shortcut Dependencies
-//    implementation "io.micronaut.aws:micronaut-function-client-aws"
-//    // End of C-ART Send Lambda Shortcut Dependencies
 }
 
 jacocoTestReport {
@@ -110,13 +59,10 @@ jacocoTestReport {
 
 test {
     useJUnitPlatform()
+    maxHeapSize = "2000m" // maximum heap size
 }
 
 test.finalizedBy(jacocoTestReport)
-
-//application {
-//    mainClass.set("com.econsult.Application")
-//}
 
 java {
     sourceCompatibility = JavaVersion.toVersion("1.8")

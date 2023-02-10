@@ -1,14 +1,14 @@
 micronaut:
-    application:
-        name: proxynaut-example
+  application:
+    name: proxynaut-example
 
 # This silly config will enable proxying http://localhost:8080/proxy/page1 to /page1
 proxynaut:
-    myself:
-        context: /proxy/
-        uri: http://localhost:8080/
-        methods: "GET"
-        timeoutMs: 30000
+  myself:
+    context: /proxy/
+    uri: http://localhost:8080/
+    methods: "GET"
+    timeoutMs: 30000
 
 server:
-    port: 8080
+  port: 8080

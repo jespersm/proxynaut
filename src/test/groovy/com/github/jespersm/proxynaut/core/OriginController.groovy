@@ -56,7 +56,7 @@ class OriginController {
     }
 
     @Get(uri="/bigResponse", produces=MediaType.TEXT_PLAIN)
-    HttpResponse<Flowable<String>> bigResponseB() {
+    HttpResponse<Flowable<String>> bigResponse() {
         return HttpResponse.ok(Flowable.range(0, 10).map(i -> i.toString() + SPACES_1000)).header("Custom-Header", "42")
     }
 

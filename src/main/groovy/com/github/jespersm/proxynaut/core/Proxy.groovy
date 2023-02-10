@@ -107,13 +107,13 @@ class Proxy implements Closeable {
 			private Subscription subscription
 
 			@Override
-			public void onSubscribe(Subscription s) {
+			void onSubscribe(Subscription s) {
 				this.subscription = s
 				s.request(1)
 			}
 
 			@Override
-			public void onNext(HttpResponse<ByteBuffer<?>> upstreamResponse) {
+			void onNext(HttpResponse<ByteBuffer<?>> upstreamResponse) {
 				if (LOG.isTraceEnabled()) {
 					LOG.trace("************ Read Response from {}", upstreamResponse.body().toString(StandardCharsets.UTF_8))
 				}
@@ -125,16 +125,18 @@ class Proxy implements Closeable {
 				}
 				ByteBuffer<?> byteBuffer = upstreamResponse.body()
 				responseBodyFlowable.onNext(byteBuffer.toByteArray())
-	        	if (byteBuffer instanceof ReferenceCounted) ((ReferenceCounted)byteBuffer).release()
+//				// TODO is this needed? yes, likely.
+//				if (byteBuffer instanceof ReferenceCounted) {
+//					((ReferenceCounted)byteBuffer).release()
+//				}
 				subscription.request(1)
 			}
 
 			@Override
-			public void onError(Throwable t) {
+			void onError(Throwable t) {
 				if (t instanceof HttpClientResponseException && ! futureResponse.isDone()) {
 					HttpClientResponseException upstreamException = (HttpClientResponseException) t
 					LOG.info("HTTP error from upstream: " + upstreamException.getStatus().getReason())
-			    	HttpResponse upstreamErrorResponse = upstreamException.getResponse()
 			    	HttpResponse<ByteBuffer<?>> upstreamResponse = (HttpResponse<ByteBuffer<?>>) upstreamException.getResponse()
 
 					LOG.info("Completed pivot: " + upstreamResponse.getStatus())
@@ -147,7 +149,7 @@ class Proxy implements Closeable {
 			}
 
 			@Override
-			public void onComplete() {
+			void onComplete() {
 				LOG.trace("Upstream response body done")
 				responseBodyFlowable.onComplete()
 			}
@@ -157,7 +159,8 @@ class Proxy implements Closeable {
 
 	private MutableHttpRequest<Object> buildRequest(HttpRequest<ByteBuffer<?>> request, String path,
 			Optional<ProxyConfiguration> config) {
-		String originPath = config.get().getUri().getPath() + path
+//		String originPath = config.get().getUri().getPath() + path
+		String originPath = config.get().getUri().toString() + path
         String queryPart = request.getUri().getQuery()
         String originUri = StringUtils.isEmpty(queryPart) ? originPath : (originPath + "?" + queryPart)
         LOG.debug("Proxy'ing incoming " + request.getMethod() + " " + request.getPath() + " -> " + originPath)
@@ -190,7 +193,7 @@ class Proxy implements Closeable {
 	private RxStreamingHttpClient findOrCreateClient(ProxyConfiguration config) {
         return proxyMap.computeIfAbsent(config.getName(), n -> {
             LOG.debug("Creating proxy for " + config.getUrl())
-            return beanContext.createBean(RxStreamingHttpClient, config.getUrl())
+            return beanContext.createBean(RxStreamingHttpClient, new Object[]{config.getUrl()})
         })
     }
 

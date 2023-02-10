@@ -5,7 +5,7 @@
   <version>0.1-SNAPSHOT</version>
   <properties>
     <exec.mainClass>com.github.jespersm.proxynaut.example.Application</exec.mainClass>
-    <micronaut.version>1.0.0</micronaut.version>
+    <micronaut.version>2.5.13</micronaut.version>
     <jdk.version>1.8</jdk.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
@@ -28,9 +28,9 @@
   </dependencyManagement>
   <dependencies>
         <dependency>
-          <groupId>com.github.jespersm.proxynaut</groupId>
-          <artifactId>proxynaut-core</artifactId>
-          <version>0.1-SNAPSHOT</version>
+          <groupId>com.j1mrenwick</groupId>
+          <artifactId>proxynaut</artifactId>
+          <version>0.0.1</version>
         </dependency>
         <dependency>
           <groupId>io.micronaut</groupId>

@@ -26,14 +26,15 @@ import java.util.stream.Collectors
 class ProxyConfiguration {
 
     private final static String ASTERISK = "*"
-    private final static EnumSet<HttpMethod> ALL_METHODS = EnumSet.allOf(HttpMethod)
+    private final static Set<HttpMethod> ALL_METHODS = EnumSet.allOf(HttpMethod)
 
     private final String name
     private int timeoutMs = 30_000
     private String context = null
     private URI uri = null
-    private EnumSet<HttpMethod> allowedMethods = ALL_METHODS
+    private Set<HttpMethod> allowedMethods = ALL_METHODS
     private Collection<String> includeRequestHeaders = Collections.emptySet()
+    // TODO add cookie removal?
     private Collection<String> excludeRequestHeaders = Collections.emptySet()
     private Collection<String> includeResponseHeaders = Collections.emptySet()
     private Collection<String> excludeResponseHeaders = Collections.emptySet()
@@ -87,53 +88,53 @@ class ProxyConfiguration {
         return allowedMethods.contains(method)
     }
 
-    Collection<String> getIncludeRequestHeaders() {
-        return Collections.unmodifiableCollection(includeRequestHeaders)
-    }
-
-    void setIncludeRequestHeaders(Collection<String> values) {
-        this.includeRequestHeaders = upperCaseSet(values)
-    }
-
-    Collection<String> getExcludeRequestHeaders() {
-        return Collections.unmodifiableCollection(excludeRequestHeaders)
-    }
-
-    void setExcludeRequestHeaders(Collection<String> values) {
-        this.excludeRequestHeaders = upperCaseSet(values)
-    }
+//    Collection<String> getIncludeRequestHeaders() {
+//        return Collections.unmodifiableCollection(includeRequestHeaders)
+//    }
+//
+//    void setIncludeRequestHeaders(Collection<String> values) {
+//        this.includeRequestHeaders = upperCaseSet(values)
+//    }
+//
+//    Collection<String> getExcludeRequestHeaders() {
+//        return Collections.unmodifiableCollection(excludeRequestHeaders)
+//    }
+//
+//    void setExcludeRequestHeaders(Collection<String> values) {
+//        this.excludeRequestHeaders = upperCaseSet(values)
+//    }
 
     boolean shouldIncludeRequestHeader(String headerName) {
-        if (! includeRequestHeaders.isEmpty()) {
-            return includeRequestHeaders.contains(safeUpper(headerName))
-        } else if (! excludeRequestHeaders.isEmpty()){
-            return ! excludeRequestHeaders.contains(safeUpper(headerName))
+        if (! includeRequestHeaders.empty) {
+            return includeRequestHeaders.find{it.equalsIgnoreCase(headerName)} != null
+        } else if (! excludeRequestHeaders.empty){
+            return excludeRequestHeaders.find{it.equalsIgnoreCase(headerName)} == null
         } else {
             return true
         }
     }
 
-    Collection<String> getIncludeResponseHeaders() {
-        return Collections.unmodifiableCollection(includeResponseHeaders)
-    }
-
-    void setIncludeResponseHeaders(Collection<String> values) {
-        this.includeResponseHeaders = upperCaseSet(values)
-    }
-
-    Collection<String> getExcludeResponseHeaders() {
-        return Collections.unmodifiableCollection(excludeResponseHeaders)
-    }
-
-    void setExcludeResponseHeaders(Collection<String> values) {
-        this.excludeResponseHeaders = upperCaseSet(values)
-    }
+//    Collection<String> getIncludeResponseHeaders() {
+//        return Collections.unmodifiableCollection(includeResponseHeaders)
+//    }
+//
+//    void setIncludeResponseHeaders(Collection<String> values) {
+//        this.includeResponseHeaders = upperCaseSet(values)
+//    }
+//
+//    Collection<String> getExcludeResponseHeaders() {
+//        return Collections.unmodifiableCollection(excludeResponseHeaders)
+//    }
+//
+//    void setExcludeResponseHeaders(Collection<String> values) {
+//        this.excludeResponseHeaders = upperCaseSet(values)
+//    }
 
     boolean shouldIncludeResponseHeader(String headerName) {
-        if (! includeResponseHeaders.isEmpty()) {
-            return includeResponseHeaders.contains(safeUpper(headerName))
-        } else if (! excludeResponseHeaders.isEmpty()){
-            return ! excludeResponseHeaders.contains(safeUpper(headerName))
+        if (! includeResponseHeaders.empty) {
+            return includeResponseHeaders.find{it.equalsIgnoreCase(headerName)} != null
+        } else if (! excludeResponseHeaders.empty){
+            return excludeResponseHeaders.find{it.equalsIgnoreCase(headerName)} == null
         } else {
             return true
         }

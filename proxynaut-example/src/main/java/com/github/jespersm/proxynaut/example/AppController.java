@@ -7,7 +7,7 @@ import io.micronaut.http.annotation.Get;
 
 @Controller("/")
 public class AppController {
-	
+
     @Get(uri="/", produces=MediaType.TEXT_PLAIN)
     public HttpResponse<String> index() {
         return HttpResponse.ok("This is the root");

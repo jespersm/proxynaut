@@ -16,7 +16,6 @@
 
 package com.github.jespersm.proxynaut.core
 
-import com.github.jespersm.proxynaut.core.ProxyConfiguration
 import io.micronaut.context.ApplicationContext
 import io.micronaut.context.env.PropertySource
 import io.micronaut.http.HttpMethod
@@ -50,7 +49,9 @@ class ProxyConfigurationSpec extends Specification {
         applicationContext.containsBean(ProxyConfiguration)
         Collection<ProxyConfiguration> proxies = applicationContext.getBeansOfType(ProxyConfiguration)
 
-        ProxyConfiguration proxy = proxies.stream().filter(p -> p.getName().equals("test1")).findFirst().get()
+        ProxyConfiguration proxy = proxies.stream()
+                .filter(p -> p.getName() == "test1")
+                .findFirst().get()
         proxy.getContext().toString() == "/root"
         proxy.getUri().toString() == "http://some.server/root"
         proxy.getAllowedMethods().contains("GET")

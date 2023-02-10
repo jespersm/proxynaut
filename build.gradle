@@ -11,7 +11,7 @@ plugins {
     id "maven"
 }
 
-version = "0.0.1"
+version = "0.0.1-SNAPSHOT"
 group = "com.j1mrenwick"
 
 repositories {
@@ -59,12 +59,13 @@ jacocoTestReport {
 
 test {
     useJUnitPlatform()
-    maxHeapSize = "2000m" // maximum heap size
+    maxHeapSize = "2000m" // maximum heap size, to combat potential memory leak
 }
 
 test.finalizedBy(jacocoTestReport)
 
 java {
+    withSourcesJar()
     sourceCompatibility = JavaVersion.toVersion("1.8")
     targetCompatibility = JavaVersion.toVersion("1.8")
 }

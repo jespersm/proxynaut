@@ -25,20 +25,20 @@ import java.util.stream.Collectors
 @EachProperty("proxynaut")
 class ProxyConfiguration {
 
-    private final static String ASTERISK = "*"
-    private final static Set<HttpMethod> ALL_METHODS = EnumSet.allOf(HttpMethod)
+    final static String ASTERISK = "*"
+    final static Set<String> ALL_METHODS = EnumSet.allOf(HttpMethod).collect{it.name()}
 
-    private final String name
-    private int timeoutMs = 30_000
-    private String context = null
-    private URI uri = null
-    private Set<HttpMethod> allowedMethods = ALL_METHODS
-    private Collection<String> includeRequestHeaders = Collections.emptySet()
+    final String name
+    int timeoutMs = 30_000
+    String context = null
+    URI uri = null
+    Set<String> allowedMethods = ALL_METHODS
+    Collection<String> includeRequestHeaders = Collections.emptySet()
     // TODO add cookie removal?
-    private Collection<String> excludeRequestHeaders = Collections.emptySet()
-    private Collection<String> includeResponseHeaders = Collections.emptySet()
-    private Collection<String> excludeResponseHeaders = Collections.emptySet()
-    private URL url
+    Collection<String> excludeRequestHeaders = Collections.emptySet()
+    Collection<String> includeResponseHeaders = Collections.emptySet()
+    Collection<String> excludeResponseHeaders = Collections.emptySet()
+    URL url
 
     ProxyConfiguration(@Parameter String name) {
         this.name = name
@@ -66,43 +66,27 @@ class ProxyConfiguration {
     }
 
     Collection<String> getAllowedMethods() {
-        return allowedMethods.stream().map(HttpMethod::name).collect(Collectors.toSet())
+        return allowedMethods
     }
 
     private static String safeUpper(String s) {
         return s.toUpperCase(Locale.ENGLISH)
     }
 
-    void setAllowedMethods(Collection<String> allowedMethods) {
+    void setAllowedMethods(Set<String> allowedMethods) {
         if (allowedMethods.contains(ASTERISK)) {
             this.allowedMethods = ALL_METHODS
         } else {
-            this.allowedMethods = EnumSet.copyOf(allowedMethods.stream()
+            this.allowedMethods = allowedMethods.stream()
                     .map(ProxyConfiguration::safeUpper)
-                    .map(HttpMethod::valueOf)
-                    .collect(Collectors.toSet()))
+                    .filter{ALL_METHODS.contains(it)}
+                    .collect(Collectors.toSet())
         }
     }
 
     boolean shouldAllowMethod(HttpMethod method) {
-        return allowedMethods.contains(method)
+        return allowedMethods.contains(method.name())
     }
-
-//    Collection<String> getIncludeRequestHeaders() {
-//        return Collections.unmodifiableCollection(includeRequestHeaders)
-//    }
-//
-//    void setIncludeRequestHeaders(Collection<String> values) {
-//        this.includeRequestHeaders = upperCaseSet(values)
-//    }
-//
-//    Collection<String> getExcludeRequestHeaders() {
-//        return Collections.unmodifiableCollection(excludeRequestHeaders)
-//    }
-//
-//    void setExcludeRequestHeaders(Collection<String> values) {
-//        this.excludeRequestHeaders = upperCaseSet(values)
-//    }
 
     boolean shouldIncludeRequestHeader(String headerName) {
         if (! includeRequestHeaders.empty) {
@@ -114,22 +98,6 @@ class ProxyConfiguration {
         }
     }
 
-//    Collection<String> getIncludeResponseHeaders() {
-//        return Collections.unmodifiableCollection(includeResponseHeaders)
-//    }
-//
-//    void setIncludeResponseHeaders(Collection<String> values) {
-//        this.includeResponseHeaders = upperCaseSet(values)
-//    }
-//
-//    Collection<String> getExcludeResponseHeaders() {
-//        return Collections.unmodifiableCollection(excludeResponseHeaders)
-//    }
-//
-//    void setExcludeResponseHeaders(Collection<String> values) {
-//        this.excludeResponseHeaders = upperCaseSet(values)
-//    }
-
     boolean shouldIncludeResponseHeader(String headerName) {
         if (! includeResponseHeaders.empty) {
             return includeResponseHeaders.find{it.equalsIgnoreCase(headerName)} != null
@@ -140,19 +108,4 @@ class ProxyConfiguration {
         }
     }
 
-    private Set<String> upperCaseSet(Collection<String> strings) {
-        return strings.stream().map(s -> s.toUpperCase(Locale.ENGLISH)).collect(Collectors.toSet())
-    }
-
-    URL getUrl() {
-        return url
-    }
-
-	int getTimeoutMs() {
-		return timeoutMs
-	}
-
-	void setTimeoutMs(int timeoutMs) {
-		this.timeoutMs = timeoutMs
-	}
 }

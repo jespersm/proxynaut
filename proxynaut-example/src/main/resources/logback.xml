@@ -13,7 +13,7 @@
     </root>
 
 <!--    <logger name="proxynaut" level="TRACE"/>-->
-    <logger name="com.github.jespersm.proxynaut" level="TRACE"/>
+    <logger name="com.github.jespersm.proxynaut.core" level="TRACE"/>
     <logger name="com.j1mrenwick" level="TRACE"/>
     <logger name="io.micronaut.http" level="TRACE"/>
     <logger name="io.netty.handler.logging" level="TRACE" />

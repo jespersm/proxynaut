@@ -30,12 +30,17 @@
         <dependency>
           <groupId>com.j1mrenwick</groupId>
           <artifactId>proxynaut</artifactId>
-          <version>0.0.1</version>
+          <version>0.0.1-SNAPSHOT</version>
         </dependency>
         <dependency>
           <groupId>io.micronaut</groupId>
           <artifactId>micronaut-http-server-netty</artifactId>
           <scope>compile</scope>
+        </dependency>
+        <dependency>
+          <groupId>io.micronaut</groupId>
+          <artifactId>micronaut-http-client</artifactId>
+          <scope>provided</scope>
         </dependency>
         <dependency>
           <groupId>io.micronaut</groupId>
@@ -58,6 +63,12 @@
           <scope>provided</scope>
         </dependency>
         <dependency>
+          <groupId>org.codehaus.groovy</groupId>
+          <artifactId>groovy</artifactId>
+          <version>3.0.7</version>
+          <scope>provided</scope>
+        </dependency>
+        <dependency>
           <groupId>ch.qos.logback</groupId>
           <artifactId>logback-classic</artifactId>
           <version>1.2.3</version>
@@ -77,44 +88,6 @@
         </dependency>
     </dependencies>
   <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-shade-plugin</artifactId>
-        <version>3.1.0</version>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>shade</goal>
-            </goals>
-            <configuration>
-              <transformers>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <mainClass>${exec.mainClass}</mainClass>
-                </transformer>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
-              </transformers>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>exec-maven-plugin</artifactId>
-        <version>1.6.0</version>
-        <configuration>
-          <executable>java</executable>
-          <arguments>
-            <argument>-noverify</argument>
-            <argument>-XX:TieredStopAtLevel=1</argument>
-            <argument>-classpath</argument>
-            <classpath/>
-            <argument>${exec.mainClass}</argument>
-          </arguments>
-        </configuration>
-      </plugin>
-    </plugins>
     <pluginManagement>
       <plugins>
         <plugin>
@@ -138,7 +111,7 @@
                 <artifactId>micronaut-validation</artifactId>
                 <version>${micronaut.version}</version>
               </path>
-</annotationProcessorPaths>
+            </annotationProcessorPaths>
           </configuration>
         </plugin>
       </plugins>

@@ -16,29 +16,38 @@
 
 package com.github.jespersm.proxynaut.core
 
-
+import groovy.util.logging.Slf4j
 import io.micronaut.context.ExecutionHandleLocator
 import io.micronaut.http.HttpMethod
 import io.micronaut.http.HttpRequest
 import io.micronaut.web.router.DefaultRouteBuilder
 
-import javax.annotation.PostConstruct
 import javax.inject.Singleton
 
 @Singleton
+@Slf4j
 class ProxyRouteBuilder extends DefaultRouteBuilder {
 
-    ProxyRouteBuilder(ExecutionHandleLocator executionHandleLocator, UriNamingStrategy uriNamingStrategy) {
+    ProxyRouteBuilder(
+            Collection<ProxyConfiguration> configs,
+            ExecutionHandleLocator executionHandleLocator, UriNamingStrategy uriNamingStrategy) {
         super(executionHandleLocator, uriNamingStrategy)
+        buildProxyRoutes(configs)
     }
 
-    @PostConstruct
     void buildProxyRoutes(Collection<ProxyConfiguration> configs) {
+        if (log.isDebugEnabled()) {
+            log.debug("Building proxy routes...")
+        }
         for (ProxyConfiguration config : configs) {
             String contextPath = config.getContext() + "{+path:?}"
             for (HttpMethod method : HttpMethod.values()) {
-                if (! config.shouldAllowMethod(method)) continue
-                buildRoute(method, contextPath, Proxy, "serve", HttpRequest, String)
+                if (config.shouldAllowMethod(method)) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("Adding route: $method $contextPath")
+                    }
+                    buildRoute(method, contextPath, Proxy, "serve", HttpRequest, String)
+                }
             }
         }
     }

@@ -1,12 +1,5 @@
-//noinspection GroovyAssignabilityCheck
-//buildscript {
-//    dependencies {
-//        classpath "org.springframework.boot:spring-boot-gradle-plugin:2.0.4.RELEASE"
-//    }
-//}
 plugins {
     id "groovy"
-//    id("com.github.johnrengelman.shadow") version "6.1.0"
     id "jacoco"
     id "maven"
 }

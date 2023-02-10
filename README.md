@@ -31,7 +31,8 @@ See the example project in [proxynaut-example](proxynaut-example).
 
 ### To Do
 - Migrate [proxynaut-example](proxynaut-example) to use Gradle
-- Update package naming
+- Resolve all WARNING messages at build time (`WARNING: Usages of deprecated annotation javax.annotation.Nullable found. You should use io.micronaut.core.annotation.Nullable instead`) 
+- Update package names
 - Resolve potential memory leak issue / investigate whether ByteBuffer data needs to be manually releasing (see TODO)
 - Review / implement additional Proxy configuration options - the following are advertised in the code but not implemented:
     - `include-request-headers`

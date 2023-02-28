@@ -1,6 +1,9 @@
 micronaut:
   application:
     name: proxynaut-example
+  security:
+    enabled: true
+    authentication: bearer
 
 # This silly config will enable proxying http://localhost:8080/proxy/page1 to /page1
 proxynaut:
@@ -8,6 +11,8 @@ proxynaut:
     context: /proxy/
     uri: http://localhost:8080/
     allowed-methods: ["GET"]
+    className: "com.github.jespersm.proxynaut.example.Test"
+    classMethod: "test"
 #    timeoutMs: 30000
 
 server:

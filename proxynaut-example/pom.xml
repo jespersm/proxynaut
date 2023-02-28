@@ -58,6 +58,14 @@
           <scope>compile</scope>
         </dependency>
         <dependency>
+            <groupId>io.micronaut.security</groupId>
+            <artifactId>micronaut-security-annotations</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micronaut.security</groupId>
+            <artifactId>micronaut-security-jwt</artifactId>
+        </dependency>
+        <dependency>
           <groupId>io.micronaut</groupId>
           <artifactId>micronaut-inject-java</artifactId>
           <scope>provided</scope>

@@ -29,6 +29,8 @@ class ProxyConfiguration {
     final static Set<String> ALL_METHODS = EnumSet.allOf(HttpMethod).collect{it.name()}
 
     final String name
+    String className
+    String classMethod
     int timeoutMs = 30_000
     String context = null
     URI uri = null
@@ -55,6 +57,20 @@ class ProxyConfiguration {
     void setContext(String context) {
         this.context = context
     }
+
+//    String getClassName() {
+//        return className
+//    }
+//
+//    void setClassName(String className) {
+//        this.className = className
+//    }
+//
+//    String getClassMethod() {
+//        return classMethod
+//    }
+
+
 
     URI getUri() {
         return uri

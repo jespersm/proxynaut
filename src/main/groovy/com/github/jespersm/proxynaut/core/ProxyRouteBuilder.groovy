@@ -46,7 +46,8 @@ class ProxyRouteBuilder extends DefaultRouteBuilder {
                     if (log.isDebugEnabled()) {
                         log.debug("Adding route: $method $contextPath")
                     }
-                    buildRoute(method, contextPath, Proxy, "serve", HttpRequest, String)
+//                    buildRoute(method, contextPath, Proxy, "serve", HttpRequest, String)
+                    buildRoute(method, contextPath, Class.forName(config.className), config.classMethod, HttpRequest, String)
                 }
             }
         }

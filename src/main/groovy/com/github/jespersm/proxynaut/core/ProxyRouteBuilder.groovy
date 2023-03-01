@@ -33,29 +33,29 @@ class ProxyRouteBuilder extends DefaultRouteBuilder {
     ApplicationContext applicationContext
 
     ProxyRouteBuilder(
-            Collection<ProxyConfiguration> configs,
+            ProxyConfiguration config,
             ExecutionHandleLocator executionHandleLocator, UriNamingStrategy uriNamingStrategy,
             ApplicationContext applicationContext) {
         super(executionHandleLocator, uriNamingStrategy)
         this.applicationContext = applicationContext
-        buildProxyRoutes(configs)
+        buildProxyRoutes(config)
     }
 
-    void buildProxyRoutes(Collection<ProxyConfiguration> configs) {
+    void buildProxyRoutes(ProxyConfiguration config) {
         if (log.isDebugEnabled()) {
             log.debug("Building proxy routes...")
         }
-        for (ProxyConfiguration config : configs) {
-            String contextPath = config.context + "{+path:?}"
+        for (ProxyConfigItem item : config.proxies) {
+            String contextPath = item.context + "{+path:?}"
             for (HttpMethod method : HttpMethod.values()) {
-                if (config.shouldAllowMethod(method)) {
+                if (item.shouldAllowMethod(method)) {
                     if (log.isDebugEnabled()) {
                         log.debug("Adding route: $method $contextPath")
                     }
 
-                    Proxy bean = applicationContext.getBean(Proxy, Qualifiers.byName(config.qualifier))
+                    Proxy bean = applicationContext.getBean(Proxy, Qualifiers.byName(item.qualifier))
 //                    buildRoute(method, contextPath, Class.forName(config.className), config.classMethod, HttpRequest, String)
-                    buildRoute(method, contextPath, bean.class, config.classMethod ?: "proxy", HttpRequest, String)
+                    buildRoute(method, contextPath, bean.class, item.invokeUsingMethod ?: "proxy", HttpRequest, String)
                 }
             }
         }

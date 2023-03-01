@@ -20,8 +20,6 @@ import groovy.util.logging.Slf4j
 import io.micronaut.context.BeanContext
 import io.micronaut.context.annotation.Executable
 import io.micronaut.core.io.buffer.ByteBuffer
-import io.micronaut.core.io.buffer.ReferenceCounted
-import io.micronaut.core.util.StringUtils
 import io.micronaut.http.HttpMethod
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
@@ -49,14 +47,14 @@ import java.util.concurrent.TimeoutException
 @Slf4j
 class ProxyProcessor implements Closeable {
 
-    private final Collection<ProxyConfiguration> configs
+    private final Collection<ProxyConfigItem> configs
 
     private Map<String, RxStreamingHttpClient> proxyMap = Collections.synchronizedMap(new HashMap<>())
 
     private BeanContext beanContext
 
-	ProxyProcessor(Collection<ProxyConfiguration> configs, BeanContext beanContext) {
-        this.configs = configs
+	ProxyProcessor(ProxyConfiguration proxyConfiguration, BeanContext beanContext) {
+        this.configs = proxyConfiguration.proxies
         this.beanContext = beanContext
     }
 
@@ -67,7 +65,7 @@ class ProxyProcessor implements Closeable {
         }
         String requestPath = request.path
         String proxyContextPath = requestPath.substring(0, requestPath.length() - path.length())
-        Optional<ProxyConfiguration> config = findConfigForRequest(proxyContextPath)
+        Optional<ProxyConfigItem> config = findConfigForRequest(proxyContextPath)
         if (!config.present) {
         	// This should never happen, only if Micronaut's router somehow was confused
         	List<String> prefixes = configs.collect{it.context}
@@ -96,7 +94,7 @@ class ProxyProcessor implements Closeable {
 		}
     }
 
-	private CompletableFuture<HttpResponse<Flowable<byte[]>>> buildResponse(Optional<ProxyConfiguration> config,
+	private CompletableFuture<HttpResponse<Flowable<byte[]>>> buildResponse(Optional<ProxyConfigItem> config,
 			Flowable<HttpResponse<ByteBuffer<?>>> upstreamResponseFlowable) {
 		CompletableFuture<HttpResponse<Flowable<byte[]>>> futureResponse = new CompletableFuture<>()
         UnicastProcessor<byte[]> responseBodyFlowable = UnicastProcessor.create()
@@ -157,7 +155,7 @@ class ProxyProcessor implements Closeable {
 	}
 
 	private MutableHttpRequest<Object> buildRequest(HttpRequest<ByteBuffer<?>> request, String path,
-			Optional<ProxyConfiguration> config) {
+			Optional<ProxyConfigItem> config) {
 		String originPath = config.get().uri.toString() + path
         String queryPart = request.uri.query
         String originUri = queryPart ? "$originPath?$queryPart" : originPath
@@ -174,28 +172,28 @@ class ProxyProcessor implements Closeable {
 
 	protected HttpResponse makeResponse(HttpResponse<?> upstreamResponse,
     		Flowable<byte[]> responseFlowable,
-			Optional<ProxyConfiguration> config) {
+			Optional<ProxyConfigItem> config) {
 		MutableHttpResponse<Flowable<byte[]>> httpResponse = SimpleHttpResponseFactory.INSTANCE.status(upstreamResponse.status, responseFlowable)
 		upstreamResponse.contentType.ifPresent(mediaType -> httpResponse.contentType(mediaType))
 		return httpResponse
 	}
 
 	protected HttpResponse makeErrorResponse(HttpResponse<?> upstreamResponse,
-			Optional<ProxyConfiguration> config) {
+			Optional<ProxyConfigItem> config) {
 		MutableHttpResponse<Flowable<byte[]>> httpResponse = SimpleHttpResponseFactory.INSTANCE.status(upstreamResponse.status, Flowable.empty())
 		upstreamResponse.contentType.ifPresent(mediaType -> httpResponse.contentType(mediaType))
 		return httpResponse
 	}
 
 
-	private RxStreamingHttpClient findOrCreateClient(ProxyConfiguration config) {
+	private RxStreamingHttpClient findOrCreateClient(ProxyConfigItem config) {
         return proxyMap.computeIfAbsent(config.name, n -> {
             log.debug("Creating proxy for " + config.url)
             return beanContext.createBean(RxStreamingHttpClient, new Object[]{config.url})
         })
     }
 
-    private Optional<ProxyConfiguration> findConfigForRequest(String prefix) {
+    private Optional<ProxyConfigItem> findConfigForRequest(String prefix) {
         return Optional.ofNullable(configs.find{it.context == prefix})
     }
 

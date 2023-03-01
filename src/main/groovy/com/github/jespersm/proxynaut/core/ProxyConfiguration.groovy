@@ -31,6 +31,7 @@ class ProxyConfiguration {
     final String name
     String className
     String classMethod
+    String qualifier
     int timeoutMs = 30_000
     String context = null
     URI uri = null
@@ -46,9 +47,10 @@ class ProxyConfiguration {
         this.name = name
     }
 
-    String getName() {
-        return name
-    }
+
+//    String getName() {
+//        return name
+//    }
 
     String getContext() {
         return context

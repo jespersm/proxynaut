@@ -17,9 +17,11 @@
 package com.github.jespersm.proxynaut.core
 
 import groovy.util.logging.Slf4j
+import io.micronaut.context.ApplicationContext
 import io.micronaut.context.ExecutionHandleLocator
 import io.micronaut.http.HttpMethod
 import io.micronaut.http.HttpRequest
+import io.micronaut.inject.qualifiers.Qualifiers
 import io.micronaut.web.router.DefaultRouteBuilder
 
 import javax.inject.Singleton
@@ -28,10 +30,14 @@ import javax.inject.Singleton
 @Slf4j
 class ProxyRouteBuilder extends DefaultRouteBuilder {
 
+    ApplicationContext applicationContext
+
     ProxyRouteBuilder(
             Collection<ProxyConfiguration> configs,
-            ExecutionHandleLocator executionHandleLocator, UriNamingStrategy uriNamingStrategy) {
+            ExecutionHandleLocator executionHandleLocator, UriNamingStrategy uriNamingStrategy,
+            ApplicationContext applicationContext) {
         super(executionHandleLocator, uriNamingStrategy)
+        this.applicationContext = applicationContext
         buildProxyRoutes(configs)
     }
 
@@ -40,14 +46,16 @@ class ProxyRouteBuilder extends DefaultRouteBuilder {
             log.debug("Building proxy routes...")
         }
         for (ProxyConfiguration config : configs) {
-            String contextPath = config.getContext() + "{+path:?}"
+            String contextPath = config.context + "{+path:?}"
             for (HttpMethod method : HttpMethod.values()) {
                 if (config.shouldAllowMethod(method)) {
                     if (log.isDebugEnabled()) {
                         log.debug("Adding route: $method $contextPath")
                     }
-//                    buildRoute(method, contextPath, Proxy, "serve", HttpRequest, String)
-                    buildRoute(method, contextPath, Class.forName(config.className), config.classMethod, HttpRequest, String)
+
+                    Proxy bean = applicationContext.getBean(Proxy, Qualifiers.byName(config.qualifier))
+//                    buildRoute(method, contextPath, Class.forName(config.className), config.classMethod, HttpRequest, String)
+                    buildRoute(method, contextPath, bean.class, config.classMethod ?: "proxy", HttpRequest, String)
                 }
             }
         }

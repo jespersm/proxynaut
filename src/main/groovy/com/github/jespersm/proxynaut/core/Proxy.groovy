@@ -45,8 +45,6 @@ import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
-import static java.util.stream.Collectors.toList
-
 @Singleton
 @Slf4j
 class Proxy implements Closeable {
@@ -63,35 +61,38 @@ class Proxy implements Closeable {
     }
 
     @Executable
-	HttpResponse<Flowable<byte[]>> serve(HttpRequest<ByteBuffer<?>> request, @Nullable String path) throws InterruptedException {
+	HttpResponse<Flowable<byte[]>> serve(HttpRequest<ByteBuffer<?>> request, @Nullable String path) {
         if (path == null) {
             path = ""
         }
-        String requestPath = request.getPath()
+        String requestPath = request.path
         String proxyContextPath = requestPath.substring(0, requestPath.length() - path.length())
         Optional<ProxyConfiguration> config = findConfigForRequest(proxyContextPath)
-        if (!config.isPresent()) {
+        if (!config.present) {
         	// This should never happen, only if Micronaut's router somehow was confused
-        	List<String> prefixes = configs.stream().map(c -> c.getContext()).collect(toList())
-            log.warn("Matched " + request.getMethod() + " " + request.getPath() + " to the proxy, but no configuration is found. Prefixes found in config: " + prefixes)
+        	List<String> prefixes = configs.collect{it.context}
+            log.warn("Matched " + request.method + " " + request.path + " to the proxy, but no configuration is found. Prefixes found in config: " + prefixes)
             return HttpResponse.status(HttpStatus.BAD_REQUEST, "Unknown proxy path: " + proxyContextPath)
         }
 
         MutableHttpRequest<Object> upstreamRequest = buildRequest(request, path, config)
 
         RxStreamingHttpClient client = findOrCreateClient(config.get())
-        log.info("About to pivot proxy call to " + config.get().getUri() + path)
+        log.info("About to pivot proxy call to " + config.get().uri + path)
         Flowable<HttpResponse<ByteBuffer<?>>> upstreamResponseFlowable = client.exchangeStream(upstreamRequest).serialize()
 
         CompletableFuture<HttpResponse<Flowable<byte[]>>> futureResponse = buildResponse(config, upstreamResponseFlowable)
 
         try {
-			return futureResponse.get(config.get().getTimeoutMs(), TimeUnit.MILLISECONDS)
+			return futureResponse.get(config.get().timeoutMs, TimeUnit.MILLISECONDS)
 		} catch (ExecutionException e) {
-			return HttpResponse.status(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage())
+			return HttpResponse.status(HttpStatus.INTERNAL_SERVER_ERROR, e.message)
 		} catch (TimeoutException e) {
-			log.info("Timeout occurred before getting upstream headers (configured to {} millisecond(s)", config.get().getTimeoutMs())
+			log.error("Timeout occurred before getting upstream headers (configured to {} millisecond(s)", config.get().timeoutMs)
 			return HttpResponse.status(HttpStatus.BAD_GATEWAY)
+		} catch (Throwable e) {
+			log.error("Exception occurred while proxying - ${e.toString()}")
+			return HttpResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
 		}
     }
 
@@ -117,7 +118,7 @@ class Proxy implements Closeable {
 				}
 				// When the upstream first first packet comes in, complete the response
 				if (! futureResponse.isDone()) {
-					log.info("Completed pivot: " + upstreamResponse.getStatus())
+					log.info("Completed pivot: " + upstreamResponse.status)
 					HttpResponse response = makeResponse(upstreamResponse, responseBodyFlowable, config)
 					futureResponse.complete(response)
 				}
@@ -132,16 +133,16 @@ class Proxy implements Closeable {
 
 			@Override
 			void onError(Throwable t) {
-				if (t instanceof HttpClientResponseException && ! futureResponse.isDone()) {
+				if (t instanceof HttpClientResponseException && ! futureResponse.done) {
 					HttpClientResponseException upstreamException = (HttpClientResponseException) t
-					log.info("HTTP error from upstream: " + upstreamException.getStatus().getReason())
-			    	HttpResponse<ByteBuffer<?>> upstreamResponse = (HttpResponse<ByteBuffer<?>>) upstreamException.getResponse()
+					log.info("HTTP error from upstream: " + upstreamException.status.reason)
+			    	HttpResponse<ByteBuffer<?>> upstreamResponse = (HttpResponse<ByteBuffer<?>>) upstreamException.response
 
-					log.info("Completed pivot: " + upstreamResponse.getStatus())
+					log.info("Completed pivot: " + upstreamResponse.status)
 					HttpResponse response = makeErrorResponse(upstreamResponse, config)
 					futureResponse.complete((HttpResponse<Flowable<byte[]>>) response)
 				} else {
-					log.info("Proxy got unknown error from upstream: " + t.getMessage(), t)
+					log.info("Proxy got unknown error from upstream: " + t.message, t)
 					responseBodyFlowable.onError(t)
 				}
 			}
@@ -157,15 +158,15 @@ class Proxy implements Closeable {
 
 	private MutableHttpRequest<Object> buildRequest(HttpRequest<ByteBuffer<?>> request, String path,
 			Optional<ProxyConfiguration> config) {
-		String originPath = config.get().getUri().toString() + path
-        String queryPart = request.getUri().getQuery()
-        String originUri = StringUtils.isEmpty(queryPart) ? originPath : (originPath + "?" + queryPart)
-        log.debug("Proxy'ing incoming " + request.getMethod() + " " + request.getPath() + " -> " + originPath)
-        MutableHttpRequest<Object> upstreamRequest = SimpleHttpRequestFactory.INSTANCE.create(request.getMethod(),
+		String originPath = config.get().uri.toString() + path
+        String queryPart = request.uri.query
+        String originUri = queryPart ? "$originPath?$queryPart" : originPath
+        log.debug("Proxy'ing incoming " + request.method + " " + request.path + " -> " + originPath)
+        MutableHttpRequest<Object> upstreamRequest = SimpleHttpRequestFactory.INSTANCE.create(request.method,
                 originUri)
 
         Optional<?> body = request.getBody()
-        if (HttpMethod.permitsRequestBody(request.getMethod())) {
+        if (HttpMethod.permitsRequestBody(request.method)) {
             body.ifPresent((Object b) -> upstreamRequest.body(b))
         }
 		return upstreamRequest
@@ -174,28 +175,28 @@ class Proxy implements Closeable {
 	protected HttpResponse makeResponse(HttpResponse<?> upstreamResponse,
     		Flowable<byte[]> responseFlowable,
 			Optional<ProxyConfiguration> config) {
-		MutableHttpResponse<Flowable<byte[]>> httpResponse = SimpleHttpResponseFactory.INSTANCE.status(upstreamResponse.getStatus(), responseFlowable)
-		upstreamResponse.getContentType().ifPresent(mediaType -> httpResponse.contentType(mediaType))
+		MutableHttpResponse<Flowable<byte[]>> httpResponse = SimpleHttpResponseFactory.INSTANCE.status(upstreamResponse.status, responseFlowable)
+		upstreamResponse.contentType.ifPresent(mediaType -> httpResponse.contentType(mediaType))
 		return httpResponse
 	}
 
 	protected HttpResponse makeErrorResponse(HttpResponse<?> upstreamResponse,
 			Optional<ProxyConfiguration> config) {
-		MutableHttpResponse<Flowable<byte[]>> httpResponse = SimpleHttpResponseFactory.INSTANCE.status(upstreamResponse.getStatus(), Flowable.empty())
-		upstreamResponse.getContentType().ifPresent(mediaType -> httpResponse.contentType(mediaType))
+		MutableHttpResponse<Flowable<byte[]>> httpResponse = SimpleHttpResponseFactory.INSTANCE.status(upstreamResponse.status, Flowable.empty())
+		upstreamResponse.contentType.ifPresent(mediaType -> httpResponse.contentType(mediaType))
 		return httpResponse
 	}
 
 
 	private RxStreamingHttpClient findOrCreateClient(ProxyConfiguration config) {
-        return proxyMap.computeIfAbsent(config.getName(), n -> {
-            log.debug("Creating proxy for " + config.getUrl())
-            return beanContext.createBean(RxStreamingHttpClient, new Object[]{config.getUrl()})
+        return proxyMap.computeIfAbsent(config.name, n -> {
+            log.debug("Creating proxy for " + config.url)
+            return beanContext.createBean(RxStreamingHttpClient, new Object[]{config.url})
         })
     }
 
     private Optional<ProxyConfiguration> findConfigForRequest(String prefix) {
-        return configs.stream().filter(config -> config.getContext().equals(prefix)).findFirst()
+        return Optional.ofNullable(configs.find{it.context == prefix})
     }
 
     @Override

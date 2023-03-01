@@ -30,7 +30,7 @@
         <dependency>
           <groupId>com.j1mrenwick</groupId>
           <artifactId>proxynaut</artifactId>
-          <version>0.0.1-SNAPSHOT</version>
+          <version>0.0.2-SNAPSHOT</version>
         </dependency>
         <dependency>
           <groupId>io.micronaut</groupId>

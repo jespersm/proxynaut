@@ -1,4 +1,4 @@
-package com.github.jespersm.proxynaut.example;
+package com.github.j1mrenwick.proxynaut.example;
 
 import io.micronaut.runtime.Micronaut;
 

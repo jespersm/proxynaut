@@ -13,18 +13,18 @@ proxynaut:
       uri: http://localhost:8080/
       allowed-methods: ["GET"]
       invoke-using-method: "test"
-      qualifier: "hello"
+      qualifier: "myProxy"
       timeoutMs: 20000
     - context: /test2/
       uri: http://localhost:8080/
       allowed-methods: [ "GET" ]
       invoke-using-method: "test"
-      qualifier: "hello"
+      qualifier: "myProxy"
       timeoutMs: 20000
     - context: /proxy/
       uri: http://localhost:8080/
       allowed-methods: [ "GET" ]
-      qualifier: "hello"
+      qualifier: "myProxy"
 
 server:
   port: 8080

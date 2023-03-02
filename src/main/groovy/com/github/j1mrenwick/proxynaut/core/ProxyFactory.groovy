@@ -1,4 +1,4 @@
-package com.github.jespersm.proxynaut.core;
+package com.github.j1mrenwick.proxynaut.core;
 
 import io.micronaut.context.annotation.AliasFor;
 import io.micronaut.context.annotation.Executable;

@@ -1,23 +1,6 @@
-/*
- * Copyright 2018 Jesper Steen Møller
- *
- * Licensed under the Apache License, Version 2.0 (the "License")
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+package com.github.j1mrenwick.proxynaut.core
 
-package com.github.jespersm.proxynaut.core
 
-import io.micronaut.context.annotation.EachProperty
-import io.micronaut.context.annotation.Parameter
 import io.micronaut.http.HttpMethod
 
 import java.util.stream.Collectors
@@ -27,7 +10,6 @@ class ProxyConfigItem {
     final static String ASTERISK = "*"
     final static Set<String> ALL_METHODS = EnumSet.allOf(HttpMethod).collect{it.name()}
 
-    final String name
     String invokeUsingMethod
     String qualifier
     int timeoutMs = 30_000
@@ -41,48 +23,9 @@ class ProxyConfigItem {
     Collection<String> excludeResponseHeaders = Collections.emptySet()
     URL url
 
-//    ProxyConfigItem(@Parameter String name) {
-//        this.name = name
-//    }
-
-
-//    String getName() {
-//        return name
-//    }
-
-    String getContext() {
-        return context
-    }
-
-    void setContext(String context) {
-        this.context = context
-    }
-
-//    String getClassName() {
-//        return className
-//    }
-//
-//    void setClassName(String className) {
-//        this.className = className
-//    }
-//
-//    String getClassMethod() {
-//        return classMethod
-//    }
-
-
-
-    URI getUri() {
-        return uri
-    }
-
     void setUri(URI uri) throws MalformedURLException {
         this.uri = uri
         this.url = uri.toURL()
-    }
-
-    Collection<String> getAllowedMethods() {
-        return allowedMethods
     }
 
     private static String safeUpper(String s) {

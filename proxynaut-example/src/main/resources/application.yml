@@ -1,14 +1,30 @@
 micronaut:
   application:
     name: proxynaut-example
+  security:
+    enabled: true
+    authentication: bearer
 
 # This silly config will enable proxying http://localhost:8080/proxy/page1 to /page1
+# TODO two config must not have the same context
 proxynaut:
-  myself:
-    context: /proxy/
-    uri: http://localhost:8080/
-    allowed-methods: ["GET"]
-#    timeoutMs: 30000
+  proxies:
+    - context: /test/
+      uri: http://localhost:8080/
+      allowed-methods: ["GET"]
+      invoke-using-method: "test"
+      qualifier: "hello"
+      timeoutMs: 20000
+    - context: /test2/
+      uri: http://localhost:8080/
+      allowed-methods: [ "GET" ]
+      invoke-using-method: "test"
+      qualifier: "hello"
+      timeoutMs: 20000
+    - context: /proxy/
+      uri: http://localhost:8080/
+      allowed-methods: [ "GET" ]
+      qualifier: "hello"
 
 server:
   port: 8080

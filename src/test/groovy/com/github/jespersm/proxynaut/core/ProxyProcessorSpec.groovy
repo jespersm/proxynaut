@@ -16,7 +16,7 @@
 
 package com.github.jespersm.proxynaut.core
 
-class ProxySpec extends AbstractOperation {
+class ProxyProcessorSpec extends AbstractOperation {
 
 	@Override
 	protected String getPrefixUnderTest() {
